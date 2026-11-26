@@ -1,0 +1,7 @@
+{
+  "name": "Ant Colony (Elixir)",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode"
+}
