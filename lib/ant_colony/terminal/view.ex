@@ -7,9 +7,16 @@ defmodule AntColony.Terminal.View do
 
   def render(state, mode) do
     ants = AntColony.children(state.supervisor)
-    frame = Data.unlines([board_panel(state, ants), status_panel(state, ants), controls()])
+    board = board_panel(state, ants)
 
-    write_frame(frame, state.live, mode)
+    lines =
+      if mode == :refresh do
+        Data.lines(board)
+      else
+        Data.lines(board) ++ Data.lines(status_panel(state, ants)) ++ state.controls
+      end
+
+    write_frame(lines, state.live, mode)
   end
 
   defp board_panel(state, ants) do
@@ -56,23 +63,31 @@ defmodule AntColony.Terminal.View do
     panel(rows, " Supervisor OTP ", :magenta, state.width)
   end
 
-  defp controls do
-    Data.unlines([
-      shortcuts(a: "+10", f: "Falhar"),
-      shortcuts("1": "one_for_one", "2": "one_for_all", "3": "rest_for_one"),
-      [shortcuts(q: "Sair"), Data.tag("  ·  Enter", :light_black)]
-    ])
+  def controls(width) do
+    strategies =
+      if width < 44 do
+        [shortcuts("1": "one_for_one", "2": "one_for_all"), shortcuts("3": "rest_for_one")]
+      else
+        [shortcuts("1": "one_for_one", "2": "one_for_all", "3": "rest_for_one")]
+      end
+
+    [shortcuts(a: "+10", f: "Falhar")] ++
+      strategies ++ [[shortcuts(q: "Sair"), Data.tag("  ·  Enter", :light_black)]]
   end
 
-  defp write_frame(frame, false, _mode), do: Owl.IO.puts(frame)
+  defp write_frame(lines, false, _mode), do: lines |> Data.unlines() |> Owl.IO.puts()
 
-  defp write_frame(frame, true, mode) do
-    screen = frame |> Data.to_chardata() |> IO.ANSI.format()
+  defp write_frame(lines, true, mode) do
+    screen =
+      Enum.with_index(lines, 1)
+      |> Enum.map(fn {line, row} ->
+        ["\e[#{row};1H\e[2K", line |> Data.to_chardata() |> IO.ANSI.format()]
+      end)
 
     if mode == :prompt do
-      IO.write(["\e[H", screen, "\n\e[J› "])
+      IO.write(["\e[?7l", screen, "\e[#{length(lines) + 1};1H\e[J› \e[?7h"])
     else
-      IO.write(["\e7\e[H", screen, "\e8"])
+      IO.write(["\e7\e[?7l", screen, "\e[?7h\e8"])
     end
   end
 

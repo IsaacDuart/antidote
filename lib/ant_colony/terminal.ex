@@ -6,9 +6,12 @@ defmodule AntColony.Terminal do
     columns = Owl.IO.columns()
     rows = Owl.IO.rows()
     width = min(columns || 56, 56)
-    height = min(max((rows || 24) - 13, 4), 11)
+    controls = View.controls(width)
+    # Both borders, the supervisor panel, the prompt, and room for Enter.
+    reserved_rows = 9 + length(controls)
+    height = min(max((rows || 24) - reserved_rows, 1), 11)
     bounds = {max(width - 4, 1), height}
-    live = (columns || 0) >= 32 and (rows || 0) >= height + 13
+    live = (columns || 0) >= 32 and (rows || 0) > reserved_rows
 
     strategy = :one_for_one
     count = 50
@@ -20,6 +23,7 @@ defmodule AntColony.Terminal do
       bounds: bounds,
       demo_ant: count,
       width: width,
+      controls: controls,
       live: live,
       failures: 0,
       restarts: 0,
@@ -27,8 +31,13 @@ defmodule AntColony.Terminal do
       message: "Cada ponto é um processo GenServer."
     }
 
-    if live, do: IO.write("\e[2J\e[H")
-    prompt(state)
+    if live, do: IO.write("\e[?1049h\e[2J")
+
+    try do
+      prompt(state)
+    after
+      if live, do: IO.write("\e[?1049l")
+    end
   end
 
   defp prompt(state) do
@@ -43,7 +52,6 @@ defmodule AntColony.Terminal do
 
     receive do
       {:command, "q"} ->
-        if state.live, do: IO.write("\r\e[K")
         Supervisor.stop(state.supervisor)
 
       {:command, key} ->
