@@ -25,7 +25,7 @@ Digite um comando e pressione Enter.
 | `3` | Seleciona `rest_for_one`. Reiniciam a formiga que falhou e as que foram iniciadas depois dela. |
 | `q` | Encerra a demo. |
 
-O painel mostra quantas formigas estão ativas, quantas falhas foram provocadas e quantos processos reiniciaram. Depois de uma falha, o painel também exibe os IDs das formigas reiniciadas e a troca de PID da F50. Com a atualização ao vivo do terminal, as formigas reiniciadas aparecem como losangos que piscam em vermelho e branco por três segundos.
+O painel mostra quantas formigas estão ativas, quantas falhas foram provocadas e quantos processos reiniciaram. Depois de uma falha, o painel também exibe os IDs das formigas reiniciadas e a troca de PID da F50. Com a atualização ao vivo do terminal, as formigas reiniciadas alternam entre um losango cheio (`◆`) e um vazado (`◇`) por três segundos. No modo estático, o quadro exibido logo após a falha marca essas formigas com `◆`.
 
 ## Experimente
 

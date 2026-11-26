@@ -14,28 +14,33 @@ defmodule AntColony.Terminal.View do
 
   defp board_panel(state, ants) do
     {width, height} = state.bounds
-    {highlighted, highlight_color} = active_highlight(state.highlight, state.live)
+    {highlighted, marker} = active_highlight(state.highlight, state.live)
 
     ants_by_position =
       Enum.group_by(ants, fn {_id, pid} -> Ant.position(pid) end, fn {id, _pid} -> id end)
 
     rows =
       for y <- 1..height do
-        for x <- 1..width, do: cell(ants_by_position[{x, y}], highlighted, highlight_color)
+        for x <- 1..width, do: cell(ants_by_position[{x, y}], highlighted, marker)
       end
 
     panel(rows, " Colônia de formigas ", :cyan, state.width)
   end
 
-  defp active_highlight(nil, _live), do: {[], :light_red}
+  defp active_highlight(nil, _live), do: {[], nil}
 
   defp active_highlight({ids, deadline}, live) do
     remaining = deadline - System.monotonic_time(:millisecond)
 
     cond do
-      remaining <= 0 -> {[], :light_red}
-      live and rem(remaining - 1, 2 * @blink_interval_ms) < @blink_interval_ms -> {ids, :white}
-      true -> {ids, :light_red}
+      remaining <= 0 ->
+        {[], nil}
+
+      live and rem(remaining - 1, 2 * @blink_interval_ms) < @blink_interval_ms ->
+        {ids, Data.tag("◇", :white)}
+
+      true ->
+        {ids, Data.tag("◆", :light_red)}
     end
   end
 
@@ -86,11 +91,11 @@ defmodule AntColony.Terminal.View do
     )
   end
 
-  defp cell(nil, _highlighted, _highlight_color), do: Data.tag("·", :light_black)
+  defp cell(nil, _highlighted, _marker), do: Data.tag("·", :light_black)
 
-  defp cell(ids, highlighted, highlight_color) do
+  defp cell(ids, highlighted, marker) do
     if Enum.any?(ids, fn id -> id in highlighted end) do
-      Data.tag("◆", highlight_color)
+      marker
     else
       color_index = rem(Enum.min(ids), length(@colors))
       Data.tag("●", Enum.at(@colors, color_index))
